@@ -31,5 +31,5 @@ class Simulation:
 
 
 if __name__ == '__main__':
-    sim = Simulation({'seed':'1647339621.669592'})
+    sim = Simulation({})
     sim.test_path_generation()
