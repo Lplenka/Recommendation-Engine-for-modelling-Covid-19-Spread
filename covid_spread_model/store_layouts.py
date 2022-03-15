@@ -50,7 +50,7 @@ def get_store_graph(config):
     # calculate shortest paths between all pairs of nodes
     all_paths = {}
     for s in range(num_nodes):
-        for e in range(s + 1, num_nodes):
+        for e in range(num_nodes):
             all_paths[(s, e)] = nx.shortest_path(graph, s, e)
     # return the graph and related information
     return {

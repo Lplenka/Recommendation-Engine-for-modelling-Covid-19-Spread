@@ -18,7 +18,7 @@ class Simulation:
         """Sets the random seed to make simulations repeatable"""
         if self.config['seed'] is None:
             self.config['seed'] = str(time.time())
-        random.seed(hash(self.config['seed']))
+        random.seed(self.config['seed'])
 
     def test_path_generation(self):
         """Temporary method for testing basic path generation"""
@@ -31,5 +31,5 @@ class Simulation:
 
 
 if __name__ == '__main__':
-    sim = Simulation({})
+    sim = Simulation({'seed':'1647339621.669592'})
     sim.test_path_generation()
