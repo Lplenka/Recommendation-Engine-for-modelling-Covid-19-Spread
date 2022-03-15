@@ -1,14 +1,12 @@
-from copy import deepcopy
 from itertools import permutations
 
 
 def generate_path_for_customer(customer, store_graph):
+    """Generates an optimal path through the graph for a specific customer"""
     start_node = store_graph['start_node']
     end_node = store_graph['end_node']
     visit_nodes = []
     for section, shelf in customer.will_visit:
-        if section_shelf_to_node(section, shelf) in [10, 11]:
-            print(section, shelf, section_shelf_to_node(section, shelf))
         visit_nodes.append(section_shelf_to_node(section, shelf))
     min_dist = 1e10
     min_nodes = []
