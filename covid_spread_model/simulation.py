@@ -9,7 +9,7 @@ from visualizer import Visualizer
 
 
 class Simulation:
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict = None) -> None:
         """Initialises the simulation"""
         self.config = get_full_config(config)
         self.__set_random_seed()
@@ -31,5 +31,5 @@ class Simulation:
 
 
 if __name__ == '__main__':
-    sim = Simulation({})
+    sim = Simulation()
     sim.test_path_generation()

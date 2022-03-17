@@ -30,6 +30,8 @@ DEFAULT_CONFIG = {
 
 def get_full_config(config: dict) -> dict:
     """Merges the default and user-defined configs"""
+    if config is None:
+        return DEFAULT_CONFIG
     return merge_configs_recursive(config, DEFAULT_CONFIG)
 
 
