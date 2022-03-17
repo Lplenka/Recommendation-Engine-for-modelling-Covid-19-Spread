@@ -3,31 +3,31 @@ import time
 
 from config import get_full_config
 from customer import Customer
-from path_generator import generate_path_for_customer
-from store_layouts import get_store_graph
-from visualise import Visualiser
+from store import Store
+from store_path import StorePath
+from visualizer import Visualizer
 
 
 class Simulation:
-    def __init__(self, config):
+    def __init__(self, config: dict) -> None:
+        """Initialises the simulation"""
         self.config = get_full_config(config)
         self.__set_random_seed()
-        self.store_graph = get_store_graph(self.config)
+        self.store = Store(self.config)
         
-    def __set_random_seed(self):
+    def __set_random_seed(self) -> None:
         """Sets the random seed to make simulations repeatable"""
         if self.config['seed'] is None:
             self.config['seed'] = str(time.time())
         random.seed(self.config['seed'])
 
-    def test_path_generation(self):
-        """Temporary method for testing basic path generation"""
+    def test_path_generation(self) -> None:
+        """Temporary method for testing path generation and visualization"""
         customer = Customer(self.config)
-        while len(customer.will_visit) == 0:
-            customer = Customer(self.config)
-        path = generate_path_for_customer(customer, self.store_graph)
-        visualiser = Visualiser(self.config, self.store_graph, path)
-        visualiser.run()
+        store_path = StorePath(customer, self.store)
+        visualizer = Visualizer(self.config, self.store)
+        visualizer.add_path(store_path)
+        visualizer.run()
 
 
 if __name__ == '__main__':
