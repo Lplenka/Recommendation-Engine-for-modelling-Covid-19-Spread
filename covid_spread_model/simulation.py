@@ -14,7 +14,7 @@ class Simulation:
         self.config = get_full_config(config)
         self.__set_random_seed()
         self.store = Store(self.config)
-        
+
     def __set_random_seed(self) -> None:
         """Sets the random seed to make simulations repeatable"""
         if self.config['seed'] is None:
