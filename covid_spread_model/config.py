@@ -1,6 +1,10 @@
 DEFAULT_CONFIG = {
     # randomness
     'seed': None,
+    # customers
+    'customers': {
+        'n_customers': 100,
+    },
     # store
     'store': {
         'n_sections': 8,
