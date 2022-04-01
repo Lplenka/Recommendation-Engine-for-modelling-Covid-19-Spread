@@ -10,7 +10,8 @@ class StorePath:
         """Constructs the optimal path through the store for the given customer"""
         self.customer = customer
         self.store = store
-        self.__generate_path()
+        #self.__generate_path()
+        self.__generate_neighbour_path()
 
     def __generate_path(self) -> None:
         """Finds the path with min distance through the store (brute-force travelling salesman)"""

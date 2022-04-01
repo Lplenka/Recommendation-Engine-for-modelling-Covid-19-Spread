@@ -16,6 +16,9 @@ class Simulation:
         self.__set_random_seed()
         self.store = Store(self.config)
         self.customers = self.__generate_customers()
+        for customer in self.customers:
+            customer_path = StorePath(customer, self.store)
+            customer.path = customer_path
 
     def __set_random_seed(self) -> None:
         """Sets the random seed to make simulations repeatable"""
@@ -76,4 +79,4 @@ class Simulation:
 
 if __name__ == '__main__':
     sim = Simulation()
-    sim.test_path_generation()
+    #sim.test_path_generation()

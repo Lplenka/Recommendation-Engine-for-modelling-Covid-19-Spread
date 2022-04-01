@@ -10,6 +10,7 @@ class Customer:
         """Constructs a customer with store locations to visit"""
         self.config = config
         self.visits = self.__get_visits()
+        self.path = None
     
     def __get_visits(self) -> List[TupleInt]:
         """Generates a non-empty list of random store locations to visit"""
