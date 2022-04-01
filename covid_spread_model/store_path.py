@@ -47,6 +47,9 @@ class StorePath:
             self.store.location_to_node(*location)
             for location in self.customer.visits)
 
+        nodes_visits = [self.store.node_start
+                     ] + nodes_visits + [self.store.node_end]
+
         curr_node = nodes_visits[0]
         nodes_visits.remove(curr_node)
         node_order = [curr_node]
