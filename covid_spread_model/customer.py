@@ -53,6 +53,7 @@ class Customer:
     
     def get_position(self) -> TupleInt:
         """Returns the current position of the customer"""
+        return (0, 0)
     
     def has_left_store(self) -> bool:
         """Returns whether or not the customer left the store this tick"""
