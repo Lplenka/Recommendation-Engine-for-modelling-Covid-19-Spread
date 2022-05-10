@@ -7,6 +7,10 @@ from customer import Customer
 from store import Store
 from store_path import StorePath
 from visualizer import Visualizer
+import numpy as np
+import scipy.stats as stats 
+
+
 
 
 class Simulation:
@@ -14,7 +18,9 @@ class Simulation:
         """Initialises the simulation"""
         self.config = get_full_config(config)
         self.__set_random_seed()
-        self.store = Store(self.config)
+        self.store = Store(self.config) 
+        """keeping a track of the ticks"""
+        self.tick_count = 0 
         self.customers = self.__generate_customers()
         for customer in self.customers:
             customer_path = StorePath(customer, self.store)
@@ -42,10 +48,18 @@ class Simulation:
         """Finalise a day's simulation"""
         for customer in self.customers_who_visited:
             customer.update_visit_probabilities()
+    
+    def get_tick_count(self) -> int:
+        """returns tick count"""
+        return self.tick_count
+    def set_tick_count(self) -> None:
+        self.tick_count += 1
+        return None
 
     def tick(self) -> None:
         """Simulate a tick in a day's simulation"""
         # add next customer if needed
+        self.set_tick_count()
         next_customer = self.__get_next_customer()
         if next_customer is not None:
             self.customers_in_store.append(next_customer)
@@ -66,7 +80,11 @@ class Simulation:
 
     def __get_next_customer(self) -> Optional[Customer]:
         """Determine if a new customer will join the queue this tick and return them from the list"""
-        return None
+        customer_arrival_probability  = stats.gamma.pdf(self.get_tick_count(), a=6, scale=1.5)*6
+        choices = [True,False]
+        distribution = [customer_arrival_probability , 1 - customer_arrival_probability]
+        if random.choices(choices, distribution):
+            return self.customers[self.get_tick_count()]
 
     def test_path_generation(self) -> None:
         """Temporary method for testing path generation and visualization"""
