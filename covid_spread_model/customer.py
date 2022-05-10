@@ -40,7 +40,14 @@ class Customer:
     def is_infected(self) -> bool:
         """Returns whether or not the customer is infected"""
         #set self.infection_duration (any number between 1 to 7)
-        return False
+        status = np.random.binomial(size=1, n=1, p=229.9/100000)
+        if status[0] == 0:
+            self.infection_status = False
+            return False
+        else:
+            self.infection_status = True
+            return True
+
     
     def update_visit_probabilities() -> None:
         """Updates item purchase probabilities based on most recent item purchases"""
@@ -66,7 +73,9 @@ class Customer:
         return R0/(average_contacts*duration)
 
     def get_infection_duration(self) -> int:
-        """Returns the duration for which the customer has been infected"""    
+        """Returns the duration for which the customer has been infected"""
+        import random
+        self.infection_duration = random.randint(1,7)
         return self.infection_duration
 
     def set_infection_duration(self,duration) -> None:
