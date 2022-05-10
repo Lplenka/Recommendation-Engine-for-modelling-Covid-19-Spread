@@ -1,5 +1,6 @@
 import random
 from typing import List, Tuple
+import time
 
 Vector = List[float]
 TupleInt = Tuple[int, int]
@@ -13,7 +14,11 @@ class Customer:
         self.path = None
         self.infection_duration = 0
         self.infection_status = False
-    
+        self.node_wait_time = []
+        self.position = ()
+        self.current_node_wait_time = 0
+        self.node_wait_timer = 0
+
     def __get_visits(self) -> List[TupleInt]:
         """Generates a non-empty list of random store locations to visit"""
         pcv_sections = self.config['store']['pc_visit_sections']
@@ -59,11 +64,19 @@ class Customer:
     
     def update_position(self) -> None:
         """Updates the customer's position this tick"""
+        curr_node = self.position[0]
+        curr_node_index = self.path.nodes_visit.index(curr_node)
+
+        if (self.current_node_wait_time > self.node_wait_timer):
+            self.node_wait_timer+=1
+            return
+
+        self.position = (self.path.nodes_visit[curr_node_index+1],time.time())
         return
     
     def get_position(self) -> TupleInt:
         """Returns the current position of the customer"""
-        return (0, 0)
+        return self.position
     
     def has_left_store(self) -> bool:
         """Returns whether or not the customer left the store this tick"""

@@ -1,3 +1,4 @@
+from distutils.sysconfig import customize_compiler
 import random
 import time
 from typing import List, Optional
@@ -9,8 +10,7 @@ from store_path import StorePath
 from visualizer import Visualizer
 import numpy as np
 import scipy.stats as stats 
-
-
+import random
 
 
 class Simulation:
@@ -25,6 +25,9 @@ class Simulation:
         for customer in self.customers:
             customer_path = StorePath(customer, self.store)
             customer.path = customer_path
+            customer.node_wait_time = [random.randint(1,10) for i in customer_path.nodes_visit]
+            customer.current_node_wait_time = customer.node_wait_time[0]
+            customer.position = (customer_path.nodes_visit[0],time.time())
 
     def __set_random_seed(self) -> None:
         """Sets the random seed to make simulations repeatable"""
