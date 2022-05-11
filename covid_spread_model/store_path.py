@@ -1,14 +1,14 @@
 from copy import deepcopy
 from itertools import permutations
+from typing import List
 
-from customer import Customer
 from store import Store
 
 
 class StorePath:
-    def __init__(self, customer: Customer, store: Store) -> None:
-        """Constructs the optimal path through the store for the given customer"""
-        self.customer = customer
+    def __init__(self, visits: List[int], store: Store) -> None:
+        """Constructs the optimal path through the store for the given customer visits"""
+        self.visits = visits
         self.store = store
         #self.__generate_path()
         self.__generate_neighbour_path()
@@ -18,7 +18,7 @@ class StorePath:
         # convert store locations to nodes
         nodes_visits = list(
             self.store.location_to_node(*location)
-            for location in self.customer.visits)
+            for location in self.visits)
         # find order of nodes that has the smallest travel distance
         best_dist = 1e10
         best_nodes = []
@@ -45,7 +45,7 @@ class StorePath:
         """Finds min dist path through the store (nearest neighbour travelling salesman)"""
         nodes_visits = list(
             self.store.location_to_node(*location)
-            for location in self.customer.visits)
+            for location in self.visits)
 
         nodes_visits = [self.store.node_start
                      ] + nodes_visits + [self.store.node_end]

@@ -1,16 +1,13 @@
-from distutils.sysconfig import customize_compiler
 import random
+import scipy.stats as stats
 import time
-from typing import List, Optional
+from csv import reader
+from functools import reduce
+from typing import List, Optional, Set
 
 from config import get_full_config
 from customer import Customer
 from store import Store
-from store_path import StorePath
-from visualizer import Visualizer
-import numpy as np
-import scipy.stats as stats 
-import random
 
 
 class Simulation:
@@ -18,16 +15,9 @@ class Simulation:
         """Initialises the simulation"""
         self.config = get_full_config(config)
         self.__set_random_seed()
-        self.store = Store(self.config) 
-        """keeping a track of the ticks"""
-        self.tick_count = 0 
+        self.store = Store(self.config)
         self.customers = self.__generate_customers()
-        for customer in self.customers:
-            customer_path = StorePath(customer, self.store)
-            customer.path = customer_path
-            customer.node_wait_time = [random.randint(1,10) for i in customer_path.nodes_visit]
-            customer.current_node_wait_time = customer.node_wait_time[0]
-            customer.position = (customer_path.nodes_visit[0],time.time())
+        self.tick_count = 0
 
     def __set_random_seed(self) -> None:
         """Sets the random seed to make simulations repeatable"""
@@ -36,12 +26,29 @@ class Simulation:
         random.seed(self.config['seed'])
     
     def __generate_customers(self) -> List[Customer]:
-        """Generates a list of all possible customers"""
+        # load visited items for each customer
+        customer_items = self.__load_customer_dataset()
+        n_customers = len(customer_items)
+        # shuffle the order of the customers for added randomness
+        random.shuffle(customer_items)
+        # generate and return a list of customer objects
         return [
-            Customer(self.config)
-            for _ in range(self.config['customers']['n_customers'])
+            Customer(self.config, customer_items[i], self.store)
+            for i in range(n_customers)
         ]
     
+    def __load_customer_dataset(self) -> List[Set[int]]:
+        """Loads a set of items for each customer from the csv dataset"""
+        customer_items = []
+        with open(self.config['customers']['dataset_path'], 'r', newline='') as f:
+            csv_reader = reader(f, delimiter=',')
+            next(csv_reader, None) # skip the header
+            for row in csv_reader:
+                customer_items.append(
+                    eval(row[2].replace('\'', ''))
+                )
+        return customer_items
+
     def start_day_simulation(self) -> None:
         """Initialise a day's simulation"""
         self.customers_in_store = []
@@ -55,6 +62,7 @@ class Simulation:
     def get_tick_count(self) -> int:
         """returns tick count"""
         return self.tick_count
+    
     def set_tick_count(self) -> None:
         self.tick_count += 1
         return None
@@ -89,15 +97,6 @@ class Simulation:
         if random.choices(choices, distribution):
             return self.customers[self.get_tick_count()]
 
-    def test_path_generation(self) -> None:
-        """Temporary method for testing path generation and visualization"""
-        customer = Customer(self.config)
-        store_path = StorePath(customer, self.store)
-        visualizer = Visualizer(self.config, self.store)
-        visualizer.add_path(store_path)
-        visualizer.run()
-
 
 if __name__ == '__main__':
     sim = Simulation()
-    #sim.test_path_generation()

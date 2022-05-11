@@ -1,29 +1,20 @@
 DEFAULT_CONFIG = {
     # randomness
     'seed': None,
+    # flow
+    'tick_duration_sec': 5,
     # customers
     'customers': {
-        'n_customers': 100,
+        'dataset_path': './dataset/aisle_vectors.csv',
     },
     # store
     'store': {
-        'n_sections': 8,
-        'n_aisles_w': 4,
-        'n_aisles_h': 2,
-        'n_shelves': 4,
-        'pc_visit_sections': [
-            0.48, 0.27, 0.62, 0.38, 0.22, 0.18, 0.53, 0.24
-        ],
-        'pc_visit_shelves': [
-            [0.25, 0.25, 0.25, 0.25],
-            [0.25, 0.25, 0.25, 0.25],
-            [0.25, 0.25, 0.25, 0.25],
-            [0.25, 0.25, 0.25, 0.25],
-            [0.25, 0.25, 0.25, 0.25],
-            [0.25, 0.25, 0.25, 0.25],
-            [0.25, 0.25, 0.25, 0.25],
-            [0.25, 0.25, 0.25, 0.25],
-        ],
+        'n_items': 134, # total items in dataset
+        'items_per_section': 5, # combine each set of 5 items into a single section
+        'n_sections': 27, # math.ceil(134 / 5)
+        'n_aisles_w': 3, # 3 aisles wide
+        'n_aisles_h': 3, # 3 aisles high --> 9 aisles total
+        'n_shelves': 3, # 27 sections = 9 aisles * 3 shelves-per-aisle
     },
     # visualizer
     'visualizer': {

@@ -1,43 +1,49 @@
+import numpy as np
 import random
-from typing import List, Tuple
 import time
+from typing import List, Set, Tuple
+
+from store import Store
+from store_path import StorePath
 
 Vector = List[float]
 TupleInt = Tuple[int, int]
 
 
 class Customer:
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, items: Set[int], store: Store) -> None:
         """Constructs a customer with store locations to visit"""
         self.config = config
-        self.visits = self.__get_visits()
-        self.path = None
+        self.visits = self.__convert_items_to_visits(items)
+        # generate path and node times
+        self.path = StorePath(self.visits, store)
+        self.node_wait_time = [
+            random.randint(1, 10)
+            for _ in self.path.nodes_visit
+        ]
+        self.current_node_wait_time = self.node_wait_time[0]
+        self.position = (self.path.nodes_visit[0], time.time())
+        self.node_wait_timer = 0
+        # set infection status
         self.infection_duration = 0
         self.infection_status = False
-        self.node_wait_time = []
-        self.position = ()
-        self.current_node_wait_time = 0
-        self.node_wait_timer = 0
 
-    def __get_visits(self) -> List[TupleInt]:
-        """Generates a non-empty list of random store locations to visit"""
-        pcv_sections = self.config['store']['pc_visit_sections']
-        pcv_shelves = self.config['store']['pc_visit_shelves']
+    def __convert_items_to_visits(self, items: Set[int]) -> List[TupleInt]:
+        # load required config values
+        items_per_section = self.config['store']['items_per_section']
+        n_sections = self.config['store']['n_sections']
+        n_shelves = self.config['store']['n_shelves']
+        # convert items to visits
         visits = []
-        for i, pcv_section in enumerate(pcv_sections):
-            if random.uniform(0, 1) >= pcv_section: continue
-            for j, pcv_shelf in enumerate(pcv_shelves[i]):
-                if random.uniform(0, 1) >= pcv_shelf: continue
-                visits.append((i, j))
-        # if the customer isn't visiting any locations then regenerate the list
-        if len(visits) == 0:
-            visits = self.__get_visits()
+        for item in items:
+            # convert item to section
+            section = (item - 1) // items_per_section
+            # convert section to aisle and shelf indices
+            aisle_ix = section // n_shelves
+            shelf_ix = section % n_shelves
+            visits.append((aisle_ix, shelf_ix))
         return visits
 
-    def __get_visits_custom(self) -> List[TupleInt]:
-        """Generates a non-empty list of random store locations to visit"""
-        return []
-    
     def __set_initial_infected_status(self) -> bool:
         """Determine the initial infection status for this customer"""
         return False
@@ -52,7 +58,6 @@ class Customer:
         else:
             self.infection_status = True
             return True
-
     
     def update_visit_probabilities() -> None:
         """Updates item purchase probabilities based on most recent item purchases"""
@@ -81,13 +86,13 @@ class Customer:
     def has_left_store(self) -> bool:
         """Returns whether or not the customer left the store this tick"""
         return False
+    
     def calculate_transmissibility(self,R0,average_contacts,duration) -> float:  
         """Calculates the transmissibility or probability of transmission"""    
         return R0/(average_contacts*duration)
 
     def get_infection_duration(self) -> int:
         """Returns the duration for which the customer has been infected"""
-        import random
         self.infection_duration = random.randint(1,7)
         return self.infection_duration
 
