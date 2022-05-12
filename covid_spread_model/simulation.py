@@ -18,6 +18,8 @@ class Simulation:
         self.store = Store(self.config)
         self.customers = self.__generate_customers()
         self.tick_count = 0
+        self.infected_count = 0 
+        self.customers_entered = 0
 
     def __set_random_seed(self) -> None:
         """Sets the random seed to make simulations repeatable"""
@@ -81,7 +83,9 @@ class Simulation:
         for customer1 in self.customers_in_store:
             for customer2 in self.customers_in_store:
                 if customer1 != customer2:
-                    customer1.update_infection_probability(customer2)
+                    if(customer1.update_infection_probability(customer2,self.get_tick_count())): 
+                        self.infected_count += 1
+
         # remove customers who just left the store
         remaining_customers_in_store = []
         for customer in self.customers_in_store:
@@ -91,14 +95,22 @@ class Simulation:
 
     def __get_next_customer(self) -> Optional[Customer]:
         """Determine if a new customer will join the queue this tick and return them from the list"""
-        customer_arrival_probability = stats.gamma.pdf(
-            self.get_tick_count(), a=6, scale=1.5)*6
+        
+        customer_arrival_probability = stats.gamma.pdf(self.get_tick_count()/(self.config['n_ticks']/self.config['customer_arrival']['gamma_config']), a=2 ,scale=4)*8 \
+            + stats.gamma.pdf(self.get_tick_count()/(self.config['n_ticks']/self.config['customer_arrival']['gamma_config']), a=7.5, scale=4)*20
+        
+        print("CUSTOMER ARRIVAL PROB: ", customer_arrival_probability)
+
         choices = [True, False]
         distribution = [customer_arrival_probability,
                         1 - customer_arrival_probability]
-        if random.choices(choices, distribution):
+        
+        if random.choices(choices, distribution)[0]:
+            #print("ENTERED")
+            self.customers_entered += 1
             return self.customers[self.get_tick_count()]
-    
+        
+        
     def test_path_generation(self):
         visualizer = Visualizer(self.config, self.store)
         visualizer.run()
@@ -106,13 +118,16 @@ class Simulation:
 
 if __name__ == '__main__':
     sim = Simulation()
-    #visualizer = Visualizer(sim.config, sim.store)
-    #sim.start_day_simulation()
-    #for i in range(10):
-        #print('Tick', sim.get_tick_count())
-        #sim.tick()
+    
+    visualizer = Visualizer(sim.config, sim.store)
+    sim.start_day_simulation()
+
+    for i in range(sim.config['n_ticks']):
+        print('Tick', sim.get_tick_count())
+        sim.tick()
         #visualizer.add_customers(sim.customers_in_store)
-    #visualizer.run()
-    # have to fix end day simulation to update probabilities of each customer in the csv based on thir buys.
-    # sim.end_day_simulation()
-    #time.sleep(0.5)
+    visualizer.run()
+
+    # Have to fix end day simulation to update probabilities of each customer in the csv based on thir buys.
+    sim.end_day_simulation()
+    time.sleep(0.5)

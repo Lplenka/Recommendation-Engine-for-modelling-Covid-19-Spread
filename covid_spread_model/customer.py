@@ -1,3 +1,4 @@
+from xmlrpc.client import Boolean
 import numpy as np
 import random
 import time
@@ -114,21 +115,31 @@ class Customer:
         self.infection_status = True
         return
 
-    def update_infection_probability(self, other_customer: "Customer"):
+    def update_infection_probability(self, other_customer: "Customer", tick_count = 0) -> bool:
         """Update this customer's infection prob. based on other customer's distance and infection status"""
-        if self.is_infected() != other_customer.is_infected():
-            if self.get_position() == other_customer.get_position():
+        
+
+        if not (self.is_infected() == other_customer.is_infected()):
+            
+            if (self.get_position()[0] == other_customer.get_position()[0]) and (tick_count - self.get_position()[1]) > 1 and (tick_count - other_customer.get_position()[1]) > 1: 
+            
                 choices = [True, False]
+
                 if (self.is_infected() and self.get_infection_duration() != 0):
                     transmissibility = self.calculate_transmissibility(
                         2.5, 3, self.get_infection_duration())
+
                     distribution = [transmissibility, 1 - transmissibility]
-                    if random.choices(choices, distribution):
+                    if random.choices(choices, distribution)[0]:
                         other_customer.set_simulation_infection()
+                        return True
+       
                 elif (other_customer.is_infected() and other_customer.get_infection_duration() != 0):
                     transmissibility = other_customer.calculate_transmissibility(
                         2.5, 3, other_customer.get_infection_duration())
                     distribution = [transmissibility, 1 - transmissibility]
-                    if random.choices(choices, distribution):
+                    if random.choices(choices, distribution)[0]:
                         self.set_simulation_infection()
-        return
+                        return True
+
+        return False

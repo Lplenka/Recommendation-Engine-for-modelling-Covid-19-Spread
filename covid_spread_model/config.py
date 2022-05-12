@@ -20,6 +20,12 @@ DEFAULT_CONFIG = {
     'visualizer': {
         'pixels_per_unit': 50,
     },
+
+    'customer_arrival': {
+        'gamma_config':50
+    }, 
+
+    'n_ticks': 50,
 }
 
 
