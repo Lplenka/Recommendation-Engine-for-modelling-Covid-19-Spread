@@ -99,11 +99,11 @@ class Customer:
 
     def get_infection_duration(self) -> int:
         """Returns the duration for which the customer has been infected"""
-		if(self.infection_status):
-			self.infection_duration = random.randint(1, 7)
-		else:
-			self.infection_duration = 0
-		return self.infection_duration
+        if (self.infection_status):
+            self.infection_duration = random.randint(1, 7)
+        else:
+            self.infection_duration = 0
+        return self.infection_duration
 
     def set_infection_duration(self, duration) -> None:
         """Sets the duration for which the customer has been infected(all customers infected in the simulation run would be given a value of 0)"""

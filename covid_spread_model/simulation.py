@@ -98,17 +98,21 @@ class Simulation:
                         1 - customer_arrival_probability]
         if random.choices(choices, distribution):
             return self.customers[self.get_tick_count()]
+    
+    def test_path_generation(self):
+        visualizer = Visualizer(self.config, self.store)
+        visualizer.run()
 
 
 if __name__ == '__main__':
     sim = Simulation()
-    visualizer = Visualizer(sim.config, sim.store)
-    sim.start_day_simulation()
-    for i in range(10):
-        print('Tick', sim.get_tick_count())
-        sim.tick()
+    #visualizer = Visualizer(sim.config, sim.store)
+    #sim.start_day_simulation()
+    #for i in range(10):
+        #print('Tick', sim.get_tick_count())
+        #sim.tick()
         #visualizer.add_customers(sim.customers_in_store)
-    visualizer.run()
+    #visualizer.run()
     # have to fix end day simulation to update probabilities of each customer in the csv based on thir buys.
     # sim.end_day_simulation()
-    time.sleep(0.5)
+    #time.sleep(0.5)
