@@ -24,7 +24,7 @@ DEFAULT_CONFIG = {
     },
     # infection
     'infection': {
-        'init_prob': 229.9 / 100000,
+        'init_prob': 1236.2 / 100000,
         'R0': 2.5,
         'average_contacts': 3,
         'duration_range': (1, 7),
