@@ -140,7 +140,7 @@ class Simulation:
     def __plot_customers_in_store(self) -> None:
         """Plots the average number of customers in the store at each tick"""
         X = list(range(self.total_ticks))
-        Y = self.__get_average_history_array(self.history.n_customers_in_store)
+        Y = self.__get_average_history_array(self.history.n_customers_in_store, self.total_ticks)
         plt.plot(X, Y)
         plt.xlabel('Ticks')
         plt.ylabel('Mean number of customers in store')
@@ -150,23 +150,14 @@ class Simulation:
         """Plots the average number of newly infected customers
             and total infected that customers visited at each tick"""
         X = list(range(self.total_ticks))
-        Y1 = self.__get_average_history_array(self.history.n_newly_infected)
-        Y2 = self.__get_average_history_array(self.history.n_infected_who_visited)
+        Y1 = self.__get_average_history_array(self.history.n_newly_infected, self.total_ticks)
+        Y2 = self.__get_average_history_array(self.history.n_infected_who_visited, self.total_ticks)
         plt.plot(X, Y1, label='Newly infected')
         plt.plot(X, Y2, label='Previously infected')
         plt.xlabel('Ticks')
         plt.ylabel('Mean number of customers')
         plt.legend()
         plt.show()
-    
-    def __get_average_history_array(self, history_array: List[List[int]]) -> List[float]:
-        """Gets the mean values of a history array over all simulations"""
-        Y = [0] * self.total_ticks
-        for i in range(self.total_ticks):
-            for j in range(self.history.n_simulations):
-                Y[i] += history_array[j][i]
-            Y[i] /= self.history.n_simulations
-        return Y
 
     def __hist_customers_newly_infected(self) -> None:
         """Plots a histogram of the number of newly infected customers from each sim"""
@@ -179,9 +170,29 @@ class Simulation:
         plt.xlabel('Number of newly infected customers')
         plt.ylabel('Count')
         plt.show()
+    
+    def visualize_exposure_time(self) -> None:
+        """Visualizes the mean exposure time for each node as a heatmap"""
+        visualizer = Visualizer(self.config, self.store)
+        exposure_times = self.__get_average_history_array(
+            self.history.node_exposure_times,
+            self.store.n_nodes
+        )
+        visualizer.add_exposure_times(exposure_times)
+        visualizer.run()
+    
+    def __get_average_history_array(self, history_array: List[List[int]], length: int) -> List[float]:
+        """Gets the mean values of a history array over all simulations"""
+        Y = [0] * length
+        for i in range(length):
+            for j in range(self.history.n_simulations):
+                Y[i] += history_array[j][i]
+            Y[i] /= self.history.n_simulations
+        return Y
 
 
 if __name__ == '__main__':
     simulation = Simulation()
     simulation.run_n_simulations(20)
     simulation.plot_basic_results()
+    simulation.visualize_exposure_time()

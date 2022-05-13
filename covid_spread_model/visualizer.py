@@ -60,8 +60,12 @@ class Visualizer:
         for graphic in self.graphics:
             graphic.draw()
 
+    def add_exposure_times(self, exposure_times: List[float]) -> None:
+        """Add node exposure time heatmap to the visualizer"""
+        pass
+
     def add_path(self, path: StorePath) -> None:
-        """Adds a customer's path to the visualiser"""
+        """Adds a customer's path to the visualizer"""
         self.__generate_path_graphics(path)
 
     def __generate_store_graphics(self) -> None:
