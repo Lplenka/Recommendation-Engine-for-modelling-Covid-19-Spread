@@ -14,6 +14,7 @@ class TileType(Enum):
     SHELF = 2
     ENTRANCE = 3
     EXIT = 4
+    TILL = 5
 
 
 class Visualizer:
@@ -24,6 +25,7 @@ class Visualizer:
     RED = (255, 0, 0)
     GREEN = (0, 255, 0)
     BLUE = (0, 0, 255)
+    YELLOW = (255, 200, 0)
 
     def __init__(self, config: dict, store: Store) -> None:
         """Visualizes the store and customer paths using pyglet"""
@@ -68,7 +70,8 @@ class Visualizer:
             TileType.ENTRANCE: self.GREEN,
             TileType.EXIT: self.RED,
             TileType.SHELF: self.DGREY,
-            TileType.WALL: self.BLACK
+            TileType.WALL: self.BLACK,
+            TileType.TILL: self.YELLOW
         }
         for x in range(self.unit_width):
             for y in range(self.unit_height):
@@ -104,7 +107,9 @@ class Visualizer:
 
     def __get_tile_type(self, x: int, y: int) -> TileType:
         """Gets the type of tile at the given (x, y) coordinate"""
-        if self.__is_entrance_tile(x, y):
+        if self.__is_till_tile(x, y):
+            return TileType.TILL
+        elif self.__is_entrance_tile(x, y):
             return TileType.ENTRANCE
         elif self.__is_exit_tile(x, y):
             return TileType.EXIT
@@ -114,6 +119,12 @@ class Visualizer:
             return TileType.SHELF
         return TileType.EMPTY
 
+    def __is_till_tile(self, x: int, y: int) -> bool:
+        """Checks if a till is at the given (x, y) coordinate"""
+        min_x = self.unit_width - 6#7
+        max_x = self.unit_width - 6#5
+        return min_x <= x <= max_x and y == 0
+    
     def __is_entrance_tile(self, x: int, y: int) -> bool:
         """Checks if an entrance is at the given (x, y) coordinate"""
         return x == 2 and y == 0
