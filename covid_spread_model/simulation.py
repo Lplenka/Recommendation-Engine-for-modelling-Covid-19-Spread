@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import random
 from csv import reader
 from scipy.stats import gamma
@@ -18,6 +17,7 @@ class Simulation:
         self.config = get_full_config(config)
         self.store = Store(self.config)
         self.total_ticks = self.__get_total_ticks()
+        self.customers = self.__generate_customers()
 
     def __get_total_ticks(self) -> int:
         """Calculates the number of ticks required to simulate a day"""
@@ -46,7 +46,8 @@ class Simulation:
         # time/flow values
         self.cur_tick = 0
         # customer values
-        self.customers = self.__generate_customers()
+        for customer in self.customers:
+            customer.reset_customer()
         random.shuffle(self.customers)
         self.n_customers_who_visited = 0
         self.customers_in_store = []

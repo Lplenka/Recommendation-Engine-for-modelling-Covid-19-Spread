@@ -39,6 +39,14 @@ class Customer:
             visits.append((aisle_ix, shelf_ix))
         return visits
     
+    def reset_customer(self) -> None:
+        """Resets the customer's variables"""
+        self.position_ix = 0
+        self.position = self.path.nodes_path[self.position_ix]
+        self.wait_timer = self.path.wait_times[self.position_ix]
+        self.infection_status = self.__get_initial_infection_status()
+        self.infection_duration = self.__get_initial_infection_duration()
+
     def __get_initial_infection_status(self) -> None:
         """Gets the initial infection status of the customer"""
         return bool(np.random.binomial(n=1, p=self.config['infection']['init_prob']))
