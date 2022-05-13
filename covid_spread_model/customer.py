@@ -71,6 +71,8 @@ class Customer:
 
     def has_just_infected(self, other: "Customer", history: History) -> bool:
         """Check if this customer will infect the other customer this tick and update accordingly"""
+        if self.get_position() is None or other.get_position() is None:
+            return False
         if self.get_position() != other.get_position():
             return False
         if not self.is_infected() or other.is_infected():

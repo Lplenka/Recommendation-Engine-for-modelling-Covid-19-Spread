@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import random
 from csv import reader
 from scipy.stats import gamma
@@ -129,7 +130,57 @@ class Simulation:
             return self.customers[self.n_customers_who_visited]
         return None
 
+    def plot_basic_results(self) -> None:
+        """Plots a selection of basic results"""
+        self.__plot_customers_in_store()
+        self.__plot_customers_newly_infected()
+        self.__hist_customers_newly_infected()
+    
+    def __plot_customers_in_store(self) -> None:
+        """Plots the average number of customers in the store at each tick"""
+        X = list(range(self.total_ticks))
+        Y = self.__get_average_history_array(self.history.n_customers_in_store)
+        plt.plot(X, Y)
+        plt.xlabel('Ticks')
+        plt.ylabel('Mean number of customers in store')
+        plt.show()
+    
+    def __plot_customers_newly_infected(self) -> None:
+        """Plots the average number of newly infected customers
+            and total infected that customers visited at each tick"""
+        X = list(range(self.total_ticks))
+        Y1 = self.__get_average_history_array(self.history.n_newly_infected)
+        Y2 = self.__get_average_history_array(self.history.n_infected_who_visited)
+        plt.plot(X, Y1, label='Newly infected')
+        plt.plot(X, Y2, label='Previously infected')
+        plt.xlabel('Ticks')
+        plt.ylabel('Mean number of customers')
+        plt.legend()
+        plt.show()
+    
+    def __get_average_history_array(self, history_array: List[List[int]]) -> List[float]:
+        """Gets the mean values of a history array over all simulations"""
+        Y = [0] * self.total_ticks
+        for i in range(self.total_ticks):
+            for j in range(self.history.n_simulations):
+                Y[i] += history_array[j][i]
+            Y[i] /= self.history.n_simulations
+        return Y
+
+    def __hist_customers_newly_infected(self) -> None:
+        """Plots a histogram of the number of newly infected customers from each sim"""
+        X = [
+            self.history.n_newly_infected[i][-1]
+            for i in range(self.history.n_simulations)
+        ]
+        n_bins = max(X) + 1
+        plt.hist(X, bins=n_bins)
+        plt.xlabel('Number of newly infected customers')
+        plt.ylabel('Count')
+        plt.show()
+
 
 if __name__ == '__main__':
     simulation = Simulation()
-    simulation.run_n_simulations(3)
+    simulation.run_n_simulations(20)
+    simulation.plot_basic_results()

@@ -3,6 +3,7 @@ DEFAULT_CONFIG = {
     'flow': {
         'hours_open': 15,
         'tick_duration_sec': 5,
+        'opening_time': 7
     },
     # customers
     'customers': {
