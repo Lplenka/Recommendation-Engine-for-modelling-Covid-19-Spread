@@ -1,6 +1,4 @@
 DEFAULT_CONFIG = {
-    # randomness
-    'seed': None,
     # time and flow
     'flow': {
         'hours_open': 15,

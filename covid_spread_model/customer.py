@@ -2,6 +2,7 @@ import numpy as np
 import random
 from typing import List, Set, Tuple
 
+from history import History
 from store import Store
 from store_path import StorePath
 
@@ -68,15 +69,16 @@ class Customer:
         """Returns whether or not the customer has left the store"""
         return self.position is None
 
-    def has_just_infected(self, other: "Customer") -> bool:
+    def has_just_infected(self, other: "Customer", history: History) -> bool:
         """Check if this customer will infect the other customer this tick and update accordingly"""
         if self.get_position() != other.get_position():
             return False
-        elif not self.is_infected() or other.is_infected():
+        if not self.is_infected() or other.is_infected():
             return False
-        elif self.infection_duration == 0:
+        if self.infection_duration == 0:
             return False
-        elif random.uniform(0, 1) <= self.__calc_trans_prob():
+        history.add_exposure_time(self.get_position())
+        if random.uniform(0, 1) <= self.__calc_trans_prob():
             other.set_infected()
             return True
         else:
