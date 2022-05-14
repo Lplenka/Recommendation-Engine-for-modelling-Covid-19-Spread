@@ -158,7 +158,7 @@ class Simulation:
     def visualize_exposure_time(self) -> None:
         """Visualizes the mean exposure time for each node as a heatmap"""
         visualizer = Visualizer(self.config, self.store)
-        exposure_times = self.__get_average_history_array(
+        exposure_times, _ = self.__get_average_history_array(
             self.history.node_exposure_times,
             self.store.n_nodes
         )
@@ -328,10 +328,10 @@ class Simulation:
 if __name__ == '__main__':
     import pickle
     simulation = Simulation()
-    #simulation.run_n_simulations(100)
-    #with open('history.pkl', 'wb') as f:
-        #pickle.dump(simulation.history, f)
-    with open('history.pkl', 'rb') as f:
-        simulation.history = pickle.load(f)
+    simulation.run_n_simulations(100)
+    with open('history.pkl', 'wb') as f:
+        pickle.dump(simulation.history, f)
+    #with open('history.pkl', 'rb') as f:
+        #simulation.history = pickle.load(f)
     simulation.print_basic_results()
     simulation.plot_basic_results()
