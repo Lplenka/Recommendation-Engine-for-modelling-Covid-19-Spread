@@ -183,15 +183,16 @@ class Simulation:
     
     def __get_average_history_array(self, history_array: List[List[int]], length: int) -> List[float]:
         """Gets the mean values of a history array over all simulations"""
-        Y = [0] * length
+        avg_arr = [0] * length
         for i in range(length):
             for j in range(self.history.n_simulations):
-                Y[i] += history_array[j][i]
-            Y[i] /= self.history.n_simulations
-        return Y
+                avg_arr[i] += history_array[j][i]
+            avg_arr[i] /= self.history.n_simulations
+        return avg_arr
     
     def test_visualizer(self) -> None:
         visualizer = Visualizer(self.config, self.store)
+        visualizer.add_node_overlay()
         visualizer.run()
 
 

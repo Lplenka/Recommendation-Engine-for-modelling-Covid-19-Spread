@@ -31,7 +31,7 @@ DEFAULT_CONFIG = {
     },
     # visualizer
     'visualizer': {
-        'pixels_per_unit': 50,
+        'pixels_per_unit': 65,
     },
 }
 

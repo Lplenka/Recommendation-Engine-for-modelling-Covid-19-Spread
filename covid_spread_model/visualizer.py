@@ -1,7 +1,7 @@
 from numpy import append
 import pyglet
 from enum import Enum
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from store import Store
 from store_path import StorePath
@@ -40,7 +40,8 @@ class Visualizer:
         self.width = self.ppu * (self.unit_width + self.unit_leg_width)
         self.height = self.ppu * self.unit_height
         # setup pyglet window
-        self.window = pyglet.window.Window()
+        pygconf = pyglet.gl.Config(sample_buffers=1, samples=4)
+        self.window = pyglet.window.Window(config=pygconf)
         self.on_draw = self.window.event(self.on_draw)
         self.window.set_size(self.width, self.height)
         # setup batches, groups and graphics
@@ -48,6 +49,7 @@ class Visualizer:
         self.group_bg = pyglet.graphics.OrderedGroup(0)
         self.group_fg0 = pyglet.graphics.OrderedGroup(1)
         self.group_fg1 = pyglet.graphics.OrderedGroup(2)
+        self.group_fg2 = pyglet.graphics.OrderedGroup(3)
         self.graphics = []
         self.__generate_store_graphics()
         self.__generate_legend()
@@ -63,8 +65,36 @@ class Visualizer:
         for graphic in self.graphics:
             graphic.draw()
 
-    def add_node_overlay(self) -> None:
-        return
+    def add_node_overlay(self, node_colors: Optional[List[List[int]]] = None) -> None:
+        """Adds an overlay showing every node and edge"""
+        paths_drawn = set()
+        # draw all nodes
+        for n0 in range(self.store.n_nodes):
+            x0, y0 = self.__coord_to_center(*self.__node_to_coord(n0))
+            # draw all paths to this node
+            for n1 in range(n0 + 1, self.store.n_nodes):
+                key = tuple(sorted((n0, n1)))
+                if key in paths_drawn or self.store.get_nodes_dist(n0, n1) != 2:
+                    continue
+                paths_drawn.add(key)
+                x1, y1 = self.__coord_to_center(*self.__node_to_coord(n1))
+                line = pyglet.shapes.Line(
+                    x0, y0, x1, y1, width=2, color=self.BLACK,
+                    batch=self.batch, group=self.group_fg0
+                )
+                line.opacity = 230
+                self.graphics.append(line)
+            # draw the node itself
+            circOut = pyglet.shapes.Circle(
+                x0, y0, self.ppu * 0.3, color=self.BLACK,
+                batch=self.batch, group=self.group_fg1
+            )
+            self.graphics.append(circOut)
+            circIn = pyglet.shapes.Circle(
+                x0, y0, self.ppu * 0.26, color=self.WHITE,
+                batch=self.batch, group=self.group_fg1
+            )
+            self.graphics.append(circIn)
 
     def add_exposure_times(self, exposure_times: List[float]) -> None:
         """Add node exposure time heatmap to the visualizer"""
@@ -97,6 +127,7 @@ class Visualizer:
     
     def __generate_path_graphics(self, path: StorePath) -> None:
         """Generates graphics which draw the given path"""
+        """
         # generate lines for the paths between nodes
         for i in range(len(path.nodes_path) - 1):
             x0, y0 = self.__coord_to_center(*self.__node_to_coord(path.nodes_path[i]))
@@ -115,6 +146,8 @@ class Visualizer:
                 batch=self.batch, group=self.group_fg1
             )
             self.graphics.append(circ)
+        """
+        pass
 
     def __generate_legend(self) -> None:
         """Generates the graphics of the legend"""
@@ -125,7 +158,7 @@ class Visualizer:
         rect_y = lambda i: heading_y + (-(i + 1.3) * self.ppu * 0.8)
         rect_s = self.ppu * 0.6
         text_x = heading_x + (self.ppu * 0.85)
-        text_y = lambda i: heading_y + (-(i + 1.15) * self.ppu * 0.8)
+        text_y = lambda i: heading_y + (-(i + 1.08) * self.ppu * 0.8)
         # heading
         heading = pyglet.text.Label(
             'Legend', font_name='Sans Serif', bold=True, font_size=18,
@@ -149,7 +182,7 @@ class Visualizer:
             rect.anchor_position = 0, 0
             self.graphics.append(rect)
             label = pyglet.text.Label(
-                text, font_name='Sans Serif', font_size=17,
+                text, font_name='Sans Serif', font_size=18,
                 x=text_x, y=text_y(i), color=self.__color_convert_text(self.BLACK),
                 batch=self.batch, group=self.group_bg
             )
