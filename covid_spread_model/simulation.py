@@ -189,10 +189,15 @@ class Simulation:
                 Y[i] += history_array[j][i]
             Y[i] /= self.history.n_simulations
         return Y
+    
+    def test_visualizer(self) -> None:
+        visualizer = Visualizer(self.config, self.store)
+        visualizer.run()
 
 
 if __name__ == '__main__':
     simulation = Simulation()
-    simulation.run_n_simulations(20)
-    simulation.plot_basic_results()
-    simulation.visualize_exposure_time()
+    simulation.test_visualizer()
+    #simulation.run_n_simulations(20)
+    #simulation.plot_basic_results()
+    #simulation.visualize_exposure_time()

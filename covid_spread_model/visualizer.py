@@ -1,3 +1,4 @@
+from numpy import append
 import pyglet
 from enum import Enum
 from typing import List, Tuple
@@ -20,12 +21,12 @@ class TileType(Enum):
 class Visualizer:
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
-    DGREY = (100, 100, 100)
-    LGREY = (180, 180, 180)
-    RED = (255, 0, 0)
-    GREEN = (0, 255, 0)
+    DGREY = (110, 110, 110)
+    LGREY = (200, 200, 200)
+    RED = (255, 127, 124)
+    GREEN = (221, 221, 124)
+    YELLOW = (255, 209, 127)
     BLUE = (0, 0, 255)
-    YELLOW = (255, 200, 0)
 
     def __init__(self, config: dict, store: Store) -> None:
         """Visualizes the store and customer paths using pyglet"""
@@ -35,7 +36,8 @@ class Visualizer:
         # calc some other values
         self.unit_width = 2 + (self.store.n_aisles_w * 3)
         self.unit_height = 3 + (self.store.n_aisles_h * (self.store.n_shelves + 1))
-        self.width = self.ppu * self.unit_width
+        self.unit_leg_width = 5
+        self.width = self.ppu * (self.unit_width + self.unit_leg_width)
         self.height = self.ppu * self.unit_height
         # setup pyglet window
         self.window = pyglet.window.Window()
@@ -48,6 +50,7 @@ class Visualizer:
         self.group_fg1 = pyglet.graphics.OrderedGroup(2)
         self.graphics = []
         self.__generate_store_graphics()
+        self.__generate_legend()
     
     def run(self) -> None:
         """Start pyglet"""
@@ -59,6 +62,9 @@ class Visualizer:
         self.window.clear()
         for graphic in self.graphics:
             graphic.draw()
+
+    def add_node_overlay(self) -> None:
+        return
 
     def add_exposure_times(self, exposure_times: List[float]) -> None:
         """Add node exposure time heatmap to the visualizer"""
@@ -73,8 +79,8 @@ class Visualizer:
         tile_colors = {
             TileType.ENTRANCE: self.GREEN,
             TileType.EXIT: self.RED,
-            TileType.SHELF: self.DGREY,
-            TileType.WALL: self.BLACK,
+            TileType.SHELF: self.LGREY,
+            TileType.WALL: self.DGREY,
             TileType.TILL: self.YELLOW
         }
         for x in range(self.unit_width):
@@ -82,7 +88,8 @@ class Visualizer:
                 tile_type = self.__get_tile_type(x, y)
                 if tile_type != TileType.EMPTY:
                     rect = pyglet.shapes.Rectangle(
-                        x * self.ppu, y * self.ppu, self.ppu, self.ppu, color=tile_colors[tile_type],
+                        (x + 0.1) * self.ppu, (y + 0.1) * self.ppu,
+                        self.ppu * 0.8, self.ppu * 0.8, color=tile_colors[tile_type],
                         batch=self.batch, group=self.group_bg
                     )
                     rect.anchor_position = 0, 0
@@ -108,6 +115,45 @@ class Visualizer:
                 batch=self.batch, group=self.group_fg1
             )
             self.graphics.append(circ)
+
+    def __generate_legend(self) -> None:
+        """Generates the graphics of the legend"""
+        # coordinates, etc.
+        heading_x = (self.unit_width + 0.8) * self.ppu
+        heading_y = (self.unit_height - 0.75) * self.ppu
+        rect_x = heading_x
+        rect_y = lambda i: heading_y + (-(i + 1.3) * self.ppu * 0.8)
+        rect_s = self.ppu * 0.6
+        text_x = heading_x + (self.ppu * 0.85)
+        text_y = lambda i: heading_y + (-(i + 1.15) * self.ppu * 0.8)
+        # heading
+        heading = pyglet.text.Label(
+            'Legend', font_name='Sans Serif', bold=True, font_size=18,
+            x=heading_x, y=heading_y, color=self.__color_convert_text(self.BLACK),
+            batch=self.batch, group=self.group_bg
+        )
+        self.graphics.append(heading)
+        # add individual labels
+        labels = [
+            ['Entrance', self.GREEN],
+            ['Exit', self.RED],
+            ['Till', self.YELLOW],
+            ['Shelf', self.LGREY],
+            ['Wall', self.DGREY],
+        ]
+        for i, (text, color) in enumerate(labels):
+            rect = pyglet.shapes.Rectangle(
+                rect_x, rect_y(i), rect_s, rect_s,
+                color=color, batch=self.batch, group=self.group_bg
+            )
+            rect.anchor_position = 0, 0
+            self.graphics.append(rect)
+            label = pyglet.text.Label(
+                text, font_name='Sans Serif', font_size=17,
+                x=text_x, y=text_y(i), color=self.__color_convert_text(self.BLACK),
+                batch=self.batch, group=self.group_bg
+            )
+            self.graphics.append(label)
 
     def __get_tile_type(self, x: int, y: int) -> TileType:
         """Gets the type of tile at the given (x, y) coordinate"""
@@ -161,12 +207,18 @@ class Visualizer:
         """Maps a color's channels to (0,1) and adds an alpha channel"""
         return [c / 255 for c in color] + [0]
 
+    def __color_convert_text(self, color: List[int]) -> List[int]:
+        """Adds an alpha channel to an RGB color"""
+        return list(color) + [255]
+
     def __node_to_coord(self, node: int) -> TupleInt:
         """Gets the (x, y) coordinates for a given node"""
         if node == self.store.node_start:
             return (2, 0)
         elif node == self.store.node_end:
             return (self.unit_width - 3, 0)
+        elif node == self.store.node_till:
+            return (self.unit_width - 6, 0)
         x = 2 + ((node // self.store.n_nodes_h) * 3)
         y = 1 + (node % self.store.n_nodes_h)
         return (x, y)
