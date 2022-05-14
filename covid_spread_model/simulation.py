@@ -171,8 +171,51 @@ class Simulation:
         visualizer.run()
     
     def print_basic_results(self) -> None:
-        # to-do
-        return
+        """Very messy results calculations"""
+        tick_dur = self.config['flow']['tick_duration_sec']
+        # init empty arrays
+        n_cust, n_cust_i, n_cust_s = [], [], []
+        n_cust_store, shop_time = [], []
+        et_tot, et_sus, et_inf = [], [], []
+        pct_sus_exp = []
+        n_new_inf, chance_inf_sus = [], []
+        # populate arrays
+        for i in range(self.history.n_simulations):
+            # num customers
+            n_cust.append(self.history.n_customers_who_visited[i][-1])
+            n_cust_i.append(self.history.n_infected_who_visited[i][-1])
+            n_cust_s.append(n_cust[-1] - n_cust_i[-1])
+            n_cust_store.append(np.mean(np.array(self.history.n_customers_in_store[i])))
+            # shopping
+            shop_time.append(tick_dur * np.mean(np.array(self.history.customer_shopping_times[i])))
+            # exposure
+            et_tot.append(tick_dur * sum(map(lambda t: t[0], self.history.customer_exposure_times[i])))
+            et_sus_lst = [t[0] for t in self.history.customer_exposure_times[i] if not t[1]]
+            et_inf_lst = [t[0] for t in self.history.customer_exposure_times[i] if t[1]]
+            et_sus.append(tick_dur * sum(et_sus_lst) / len(et_sus_lst))
+            et_inf.append(tick_dur * sum(et_inf_lst) / len(et_inf_lst))
+            pct_sus_exp.append(sum(1 for t in et_sus_lst if t > 0) / len(et_sus_lst))
+            n_new_inf.append(self.history.n_newly_infected[i][-1])
+            chance_inf_sus.append(n_new_inf[-1] / n_cust_s[-1])
+        # list metrics and relevant arrays
+        result_arrs = [
+            ['num daily customers', n_cust, 2],
+            ['num infected customers', n_cust_i, 2],
+            ['num susceptible customers', n_cust_s, 2],
+            ['mean num in store', n_cust_store, 2],
+            ['mean shop time (sec)', shop_time, 2],
+            ['total exp time (sec)', et_tot, 2],
+            ['mean exp time (sec) per susceptible cust', et_sus, 2],
+            ['total exp time (sec) per infected cust', et_inf, 2],
+            ['proportion of susceptible cust with any exposure', pct_sus_exp, 4],
+            ['num new infections', n_new_inf, 2],
+            ['proportion of infections per susceptible cust', chance_inf_sus, 5],
+        ]
+        # calculate results and print
+        print('metric,mean,sd')
+        for metric, arr, rnd in result_arrs:
+            arr = np.array(arr)
+            print(f'{metric},{round(np.mean(arr), rnd)},{round(np.std(arr), rnd)}')
 
     def plot_basic_results(self) -> None:
         """Plots a selection of basic results"""
@@ -254,9 +297,9 @@ class Simulation:
             final_n_inf = self.history.n_infected_who_visited[i][-1]
             final_n_new = self.history.n_newly_infected[i][-1]
             inf_chance = final_n_new / (final_n_vis - final_n_inf)
-            inf_chances.append(inf_chance)
+            inf_chances.append(100 * inf_chance)
         plt.hist(inf_chances, color='cornflowerblue')
-        plt.xlabel('Customer infection probability (%)')
+        plt.xlabel('Susceptible customer infection chance (%)')
         plt.ylabel('Number of simulations')
         plt.show()
 
@@ -272,7 +315,7 @@ class Simulation:
                 std_arr[i] += (avg_arr[i] - history_array[j][i]) ** 2
             std_arr[i] = (std_arr[i] / self.history.n_simulations) ** 0.5
         return np.array(avg_arr), np.array(std_arr)
-
+    
     def __get_time_ticks(self) -> Tuple[List[int], List[str]]:
         opening_time = self.config['flow']['opening_time']
         hours_open = self.config['flow']['hours_open']
