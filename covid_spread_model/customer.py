@@ -23,6 +23,9 @@ class Customer:
         # set infection status and duration
         self.infection_status = self.__get_initial_infection_status()
         self.infection_duration = self.__get_initial_infection_duration()
+        # results stuff
+        self.exposure_time = 0
+        self.shopping_time = 0
 
     def __convert_items_to_visits(self, items: Set[int]) -> List[TupleInt]:
         # load required config values
@@ -46,6 +49,8 @@ class Customer:
         self.wait_timer = self.path.wait_times[self.position_ix]
         self.infection_status = self.__get_initial_infection_status()
         self.infection_duration = self.__get_initial_infection_duration()
+        self.exposure_time = 0
+        self.shopping_time = 0
 
     def __get_initial_infection_status(self) -> None:
         """Gets the initial infection status of the customer"""
@@ -87,6 +92,8 @@ class Customer:
             return False
         if self.infection_duration == 0:
             return False
+        self.exposure_time += 1
+        other.exposure_time += 1
         history.add_exposure_time(self.get_position())
         if random.uniform(0, 1) <= self.__calc_trans_prob():
             other.set_infected()

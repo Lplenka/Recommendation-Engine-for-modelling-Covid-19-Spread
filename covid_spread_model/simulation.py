@@ -1,8 +1,10 @@
+import math
 import matplotlib.pyplot as plt
+import numpy as np
 import random
 from csv import reader
 from scipy.stats import gamma
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 from config import get_full_config
 from customer import Customer
@@ -97,6 +99,8 @@ class Simulation:
         # update customer positions
         for customer in self.customers_in_store:
             customer.update_position()
+            if not customer.has_left_store():
+                customer.shopping_time += 1
         # update customer infection probabilities
         for customer1 in self.customers_in_store:
             for customer2 in self.customers_in_store:
@@ -108,9 +112,15 @@ class Simulation:
         for customer in self.customers_in_store:
             if not customer.has_left_store():
                 new_customers_in_store.append(customer)
+            else:
+                self.history.add_individual_customer_data(
+                    customer.exposure_time,
+                    customer.shopping_time,
+                    customer.infection_duration > 0
+                )
         self.customers_in_store = new_customers_in_store
         # add customer data to history
-        self.history.add_customer_data(
+        self.history.add_overall_customer_data(
             len(self.customers_in_store),
             self.n_customers_who_visited,
             self.n_newly_infected,
@@ -160,32 +170,30 @@ class Simulation:
         visualizer.add_exposure_times(exposure_times)
         visualizer.run()
     
+    def print_basic_results(self) -> None:
+        # to-do
+        return
+
     def plot_basic_results(self) -> None:
         """Plots a selection of basic results"""
         self.__plot_customers_in_store()
-        self.__plot_customers_newly_infected()
         self.__hist_customers_newly_infected()
+        self.__plot_customers_newly_infected()
+        self.__plot_customer_exposure_time()
+        self.__hist_customer_infection_chance()
     
     def __plot_customers_in_store(self) -> None:
         """Plots the average number of customers in the store at each tick"""
-        X = list(range(self.total_ticks))
-        Y = self.__get_average_history_array(self.history.n_customers_in_store, self.total_ticks)
-        plt.plot(X, Y)
-        plt.xlabel('Ticks')
+        X = np.array(range(self.total_ticks))
+        Y, sd = self.__get_average_history_array(self.history.n_customers_in_store, self.total_ticks)
+        # only show every 20th element to make the curve smoother
+        X, Y, sd = X[::20], Y[::20], sd[::20]
+        ticks, labels = self.__get_time_ticks()
+        plt.plot(X, Y, color='royalblue')
+        plt.fill_between(X, Y - sd, Y + sd, color='lightsteelblue')
+        plt.xticks(ticks=ticks, labels=labels, rotation=45)
+        plt.xlabel('Time')
         plt.ylabel('Mean number of customers in store')
-        plt.show()
-    
-    def __plot_customers_newly_infected(self) -> None:
-        """Plots the average number of newly infected customers
-            and total infected that customers visited at each tick"""
-        X = list(range(self.total_ticks))
-        Y1 = self.__get_average_history_array(self.history.n_newly_infected, self.total_ticks)
-        Y2 = self.__get_average_history_array(self.history.n_infected_who_visited, self.total_ticks)
-        plt.plot(X, Y1, label='Newly infected')
-        plt.plot(X, Y2, label='Previously infected')
-        plt.xlabel('Ticks')
-        plt.ylabel('Mean number of customers')
-        plt.legend()
         plt.show()
 
     def __hist_customers_newly_infected(self) -> None:
@@ -194,24 +202,94 @@ class Simulation:
             self.history.n_newly_infected[i][-1]
             for i in range(self.history.n_simulations)
         ]
-        n_bins = max(X) + 1
-        plt.hist(X, bins=n_bins)
-        plt.xlabel('Number of newly infected customers')
-        plt.ylabel('Count')
+        plt.hist(X, bins=20, color='cornflowerblue')
+        plt.xlim([0, 100])
+        plt.xlabel('Number of new infections')
+        plt.ylabel('Number of simulations')
+        plt.show()
+    
+    def __plot_customers_newly_infected(self) -> None:
+        """Plots the average number of newly infected customers
+            and total infected that customers visited at each tick"""
+        X = np.array(range(self.total_ticks))
+        Y1, sd1 = self.__get_average_history_array(self.history.n_newly_infected, self.total_ticks)
+        Y2, sd2 = self.__get_average_history_array(self.history.n_infected_who_visited, self.total_ticks)
+        ticks, labels = self.__get_time_ticks()
+        plt.plot(X, Y1, color='royalblue', label='Newly infected')
+        plt.plot(X, Y2, color='orange', label='Previously infected')
+        plt.fill_between(X, Y1 - sd1, Y1 + sd1, color='lightsteelblue', alpha=0.5)
+        plt.fill_between(X, Y2 - sd2, Y2 + sd2, color='moccasin', alpha=0.5)
+        plt.xticks(ticks=ticks, labels=labels, rotation=45)
+        plt.xlabel('Time')
+        plt.ylabel('Mean number of customers')
+        plt.legend()
         plt.show()
 
-    def __get_average_history_array(self, history_array: List[List[int]], length: int) -> List[float]:
+    def __plot_customer_exposure_time(self) -> None:
+        """This method could be drastically improved but it works for now"""
+        tick_duration_sec = self.config['flow']['tick_duration_sec']
+        exp_times_sec = []
+        for i in range(self.history.n_simulations):
+            cust_exp_times = self.history.customer_exposure_times[i]
+            for j in range(len(cust_exp_times)):
+                exp_times_sec.append(tick_duration_sec * cust_exp_times[j][0])
+        n_bins = int(math.ceil(max(exp_times_sec) // tick_duration_sec)) + 1
+        X = [i * tick_duration_sec for i in range(n_bins)]
+        Y = [0] * n_bins
+        for t in exp_times_sec:
+            Y[t // tick_duration_sec] += 1
+        for i in range(n_bins):
+            Y[i] /= len(exp_times_sec)
+        plt.plot(X, Y, color='royalblue')
+        plt.xlabel('Exposure time (s)')
+        plt.ylabel('Proportion of customers')
+        plt.xlim([-3, 35])
+        plt.ylim([0, 1])
+        plt.show()
+    
+    def __hist_customer_infection_chance(self) -> None:
+        inf_chances = []
+        for i in range(self.history.n_simulations):
+            final_n_vis = self.history.n_customers_who_visited[i][-1]
+            final_n_inf = self.history.n_infected_who_visited[i][-1]
+            final_n_new = self.history.n_newly_infected[i][-1]
+            inf_chance = final_n_new / (final_n_vis - final_n_inf)
+            inf_chances.append(inf_chance)
+        plt.hist(inf_chances, color='cornflowerblue')
+        plt.xlabel('Customer infection probability (%)')
+        plt.ylabel('Number of simulations')
+        plt.show()
+
+    def __get_average_history_array(self, history_array: List[List[int]], length: int) -> Tuple[List[float], List[float]]:
         """Gets the mean values of a history array over all simulations"""
         avg_arr = [0] * length
+        std_arr = [0] * length
         for i in range(length):
             for j in range(self.history.n_simulations):
                 avg_arr[i] += history_array[j][i]
             avg_arr[i] /= self.history.n_simulations
-        return avg_arr
+            for j in range(self.history.n_simulations):
+                std_arr[i] += (avg_arr[i] - history_array[j][i]) ** 2
+            std_arr[i] = (std_arr[i] / self.history.n_simulations) ** 0.5
+        return np.array(avg_arr), np.array(std_arr)
+
+    def __get_time_ticks(self) -> Tuple[List[int], List[str]]:
+        opening_time = self.config['flow']['opening_time']
+        hours_open = self.config['flow']['hours_open']
+        ticks_per_hour = 3600 // self.config['flow']['tick_duration_sec']
+        hours = list(range(opening_time, opening_time + hours_open + 1))
+        ticks = [i * ticks_per_hour for i in range(hours_open + 1)]
+        labels = [str(hour).zfill(2) + ':00' for hour in hours]
+        return ticks, labels
 
 
 if __name__ == '__main__':
+    import pickle
     simulation = Simulation()
-    simulation.run_n_simulations(30)
-    simulation.visualize_exposure_time()
-    #simulation.plot_basic_results()
+    #simulation.run_n_simulations(100)
+    #with open('history.pkl', 'wb') as f:
+        #pickle.dump(simulation.history, f)
+    with open('history.pkl', 'rb') as f:
+        simulation.history = pickle.load(f)
+    simulation.print_basic_results()
+    simulation.plot_basic_results()
