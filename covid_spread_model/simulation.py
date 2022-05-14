@@ -193,12 +193,13 @@ class Simulation:
     def test_visualizer(self) -> None:
         visualizer = Visualizer(self.config, self.store)
         visualizer.add_node_overlay()
+        visualizer.add_path(self.customers[10].path)
         visualizer.run()
 
 
 if __name__ == '__main__':
     simulation = Simulation()
     simulation.test_visualizer()
-    #simulation.run_n_simulations(20)
+    #simulation.run_n_simulations(2)
     #simulation.plot_basic_results()
     #simulation.visualize_exposure_time()

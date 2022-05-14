@@ -1,6 +1,6 @@
-from numpy import append
 import pyglet
 from enum import Enum
+from matplotlib.pyplot import colormaps
 from typing import List, Optional, Tuple
 
 from store import Store
@@ -44,6 +44,11 @@ class Visualizer:
         self.window = pyglet.window.Window(config=pygconf)
         self.on_draw = self.window.event(self.on_draw)
         self.window.set_size(self.width, self.height)
+        # setup sprites
+        self.arrow_sprite = pyglet.image.load('./graphics/path_arrow.png')
+        self.arrow_sprite.anchor_x = self.arrow_sprite.width // 2
+        self.arrow_sprite_long = pyglet.image.load('./graphics/path_arrow_long.png')
+        self.arrow_sprite_long.anchor_x = self.arrow_sprite_long.width // 2
         # setup batches, groups and graphics
         self.batch = pyglet.graphics.Batch()
         self.group_bg = pyglet.graphics.OrderedGroup(0)
@@ -67,8 +72,11 @@ class Visualizer:
 
     def add_node_overlay(self, node_colors: Optional[List[List[int]]] = None) -> None:
         """Adds an overlay showing every node and edge"""
+        # if no colors were specified then just use white
+        if node_colors is None:
+            node_colors = [self.WHITE] * self.store.n_nodes
+        # draw all nodes and paths
         paths_drawn = set()
-        # draw all nodes
         for n0 in range(self.store.n_nodes):
             x0, y0 = self.__coord_to_center(*self.__node_to_coord(n0))
             # draw all paths to this node
@@ -86,23 +94,46 @@ class Visualizer:
                 self.graphics.append(line)
             # draw the node itself
             circOut = pyglet.shapes.Circle(
-                x0, y0, self.ppu * 0.3, color=self.BLACK,
+                x0, y0, self.ppu * 0.33, color=self.BLACK,
                 batch=self.batch, group=self.group_fg1
             )
             self.graphics.append(circOut)
             circIn = pyglet.shapes.Circle(
-                x0, y0, self.ppu * 0.26, color=self.WHITE,
+                x0, y0, self.ppu * 0.29, color=node_colors[n0],
                 batch=self.batch, group=self.group_fg1
             )
             self.graphics.append(circIn)
 
     def add_exposure_times(self, exposure_times: List[float]) -> None:
         """Add node exposure time heatmap to the visualizer"""
-        pass
+        to_color = lambda x: tuple(map(lambda y: int(255 * y), colormaps['Reds'](x)))[:3]
+        mn, mx = min(exposure_times), max(exposure_times)
+        if mn != mx:
+            node_colors = list(map(lambda t: to_color((t - mn) / (mx - mn)), exposure_times))
+        else:
+            node_colors = None
+        self.add_node_overlay(node_colors=node_colors)
 
     def add_path(self, path: StorePath) -> None:
         """Adds a customer's path to the visualizer"""
-        self.__generate_path_graphics(path)
+        for i in range(len(path.nodes_path) - 1):
+            x0, y0 = self.__coord_to_center(*self.__node_to_coord(path.nodes_path[i]))
+            x1, y1 = self.__coord_to_center(*self.__node_to_coord(path.nodes_path[i + 1]))
+            image = self.arrow_sprite
+            if x0 == x1:
+                if y0 < y1: rotation = 0
+                else: rotation = 180
+            else:
+                image = self.arrow_sprite_long
+                if x0 < x1: rotation = 90
+                else: rotation = 270
+            sprite = pyglet.sprite.Sprite(
+                image, x=x0, y=y0,
+                batch=self.batch, group=self.group_fg2
+            )
+            sprite.rotation = rotation
+            self.graphics.append(sprite)
+        self.__generate_legend(just_path=True)
 
     def __generate_store_graphics(self) -> None:
         """Generates graphics which draw the store layout"""
@@ -125,31 +156,7 @@ class Visualizer:
                     rect.anchor_position = 0, 0
                     self.graphics.append(rect)
     
-    def __generate_path_graphics(self, path: StorePath) -> None:
-        """Generates graphics which draw the given path"""
-        """
-        # generate lines for the paths between nodes
-        for i in range(len(path.nodes_path) - 1):
-            x0, y0 = self.__coord_to_center(*self.__node_to_coord(path.nodes_path[i]))
-            x1, y1 = self.__coord_to_center(*self.__node_to_coord(path.nodes_path[i + 1]))
-            line = pyglet.shapes.Line(
-                x0, y0, x1, y1, width=5, color=self.LGREY,
-                batch=self.batch, group=self.group_fg0
-            )
-            line.opacity = 150
-            self.graphics.append(line)
-        # generate circular nodes
-        for node in path.nodes_visit:
-            x, y = self.__coord_to_center(*self.__node_to_coord(node))
-            circ = pyglet.shapes.Circle(
-                x, y, self.ppu * 0.25, color=self.BLUE,
-                batch=self.batch, group=self.group_fg1
-            )
-            self.graphics.append(circ)
-        """
-        pass
-
-    def __generate_legend(self) -> None:
+    def __generate_legend(self, just_path: bool = False) -> None:
         """Generates the graphics of the legend"""
         # coordinates, etc.
         heading_x = (self.unit_width + 0.8) * self.ppu
@@ -159,14 +166,31 @@ class Visualizer:
         rect_s = self.ppu * 0.6
         text_x = heading_x + (self.ppu * 0.85)
         text_y = lambda i: heading_y + (-(i + 1.08) * self.ppu * 0.8)
+        # add the path arrow to the legend and immediately return
+        if just_path:
+            sx = rect_x - (self.ppu * 0.05)
+            sy = rect_y(6) + (rect_s / 2)
+            sprite = pyglet.sprite.Sprite(
+                self.arrow_sprite, x=sx, y=sy,
+                batch=self.batch, group=self.group_bg
+            )
+            sprite.scale = 0.75
+            sprite.rotation = 90
+            self.graphics.append(sprite)
+            label = pyglet.text.Label(
+                'Path', font_name='Sans Serif', font_size=18,
+                x=text_x, y=text_y(6), color=self.__color_convert_text(self.BLACK),
+                batch=self.batch, group=self.group_bg
+            )
+            self.graphics.append(label)
         # heading
         heading = pyglet.text.Label(
-            'Legend', font_name='Sans Serif', bold=True, font_size=18,
+            'Legend', font_name='Sans Serif', bold=True, font_size=19,
             x=heading_x, y=heading_y, color=self.__color_convert_text(self.BLACK),
             batch=self.batch, group=self.group_bg
         )
         self.graphics.append(heading)
-        # add individual labels
+        # tiles
         labels = [
             ['Entrance', self.GREEN],
             ['Exit', self.RED],
@@ -187,6 +211,27 @@ class Visualizer:
                 batch=self.batch, group=self.group_bg
             )
             self.graphics.append(label)
+        # node
+        cx, cy = rect_x, rect_y(5)
+        cs = rect_s / 2
+        circOut = pyglet.shapes.Circle(
+            cx, cy, cs, color=self.BLACK,
+            batch=self.batch, group=self.group_bg
+        )
+        circOut.anchor_position = cs, cs
+        self.graphics.append(circOut)
+        circIn = pyglet.shapes.Circle(
+            cx, cy, cs * 0.87, color=self.WHITE,
+            batch=self.batch, group=self.group_bg
+        )
+        circIn.anchor_position = cs, cs
+        self.graphics.append(circIn)
+        label = pyglet.text.Label(
+            'Node', font_name='Sans Serif', font_size=18,
+            x=text_x, y=text_y(5), color=self.__color_convert_text(self.BLACK),
+            batch=self.batch, group=self.group_bg
+        )
+        self.graphics.append(label)
 
     def __get_tile_type(self, x: int, y: int) -> TileType:
         """Gets the type of tile at the given (x, y) coordinate"""
