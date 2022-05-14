@@ -1,12 +1,12 @@
 metric,mean,sd
-num daily customers,1459.51,35.01
-num infected customers,18.52,4.14
-num susceptible customers,1440.99,35.15
-mean num in store,7.14,0.18
-mean shop time (sec),264.5,2.28
-total exp time (sec),1724.7,462.1
-mean exp time (sec) per susceptible cust,0.6,0.16
-total exp time (sec) per infected cust,46.68,7.65
-proportion of susceptible cust with any exposure,0.0691,0.0177
-num new infections,46.15,14.41
-proportion of infections per susceptible cust,0.03203,0.01
+num daily customers,2918.75,44.08
+num infected customers,34.95,6.1
+num susceptible customers,2883.8,43.97
+mean num in store,14.3,0.24
+mean shop time (sec),264.69,1.28
+total exp time (sec),6209.8,1155.65
+mean exp time (sec) per susceptible cust,1.08,0.2
+total exp time (sec) per infected cust,89.29,9.42
+proportion of susceptible cust with any exposure,0.1225,0.0216
+num new infections,165.71,36.07
+proportion of infections per susceptible cust,0.05746,0.0125

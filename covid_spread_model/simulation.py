@@ -246,7 +246,6 @@ class Simulation:
             for i in range(self.history.n_simulations)
         ]
         plt.hist(X, bins=20, color='cornflowerblue')
-        plt.xlim([0, 100])
         plt.xlabel('Number of new infections')
         plt.ylabel('Number of simulations')
         plt.show()
