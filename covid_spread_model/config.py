@@ -9,7 +9,7 @@ DEFAULT_CONFIG = {
     'customers': {
         'dataset_path': './dataset/aisle_vectors.csv',
         'arrival_gamma': 50,
-        'arrival_prob_scale': 0.5, # how busy the day is
+        'arrival_prob_scale': 1.0, # how busy the day is
         'item_wait_range': (1, 5),
         'till_wait_range': (1, 5)
     },

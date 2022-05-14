@@ -1,6 +1,11 @@
+import matplotlib.pyplot as plt
+import numpy as np
 import pyglet
 from enum import Enum
-from matplotlib.pyplot import colormaps
+from matplotlib.backends.backend_agg import FigureCanvasAgg as Canvas
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
+from matplotlib.figure import Figure
 from typing import List, Optional, Tuple
 
 from store import Store
@@ -27,6 +32,7 @@ class Visualizer:
     GREEN = (221, 221, 124)
     YELLOW = (255, 209, 127)
     BLUE = (0, 0, 255)
+    CMAP = plt.colormaps['Reds']
 
     def __init__(self, config: dict, store: Store) -> None:
         """Visualizes the store and customer paths using pyglet"""
@@ -44,11 +50,13 @@ class Visualizer:
         self.window = pyglet.window.Window(config=pygconf)
         self.on_draw = self.window.event(self.on_draw)
         self.window.set_size(self.width, self.height)
-        # setup sprites
-        self.arrow_sprite = pyglet.image.load('./graphics/path_arrow.png')
+        # setup sprites and fonts
+        self.arrow_sprite = pyglet.image.load('./assets/images/path_arrow.png')
         self.arrow_sprite.anchor_x = self.arrow_sprite.width // 2
-        self.arrow_sprite_long = pyglet.image.load('./graphics/path_arrow_long.png')
+        self.arrow_sprite_long = pyglet.image.load('./assets/images/path_arrow_long.png')
         self.arrow_sprite_long.anchor_x = self.arrow_sprite_long.width // 2
+        pyglet.font.add_file('./assets/fonts/DejaVuSans.ttf')
+        pyglet.font.load('DejaVu Sans')
         # setup batches, groups and graphics
         self.batch = pyglet.graphics.Batch()
         self.group_bg = pyglet.graphics.OrderedGroup(0)
@@ -104,15 +112,17 @@ class Visualizer:
             )
             self.graphics.append(circIn)
 
-    def add_exposure_times(self, exposure_times: List[float]) -> None:
+    def add_exposure_times(self, exp_times: List[float]) -> None:
         """Add node exposure time heatmap to the visualizer"""
-        to_color = lambda x: tuple(map(lambda y: int(255 * y), colormaps['Reds'](x)))[:3]
-        mn, mx = min(exposure_times), max(exposure_times)
-        if mn != mx:
-            node_colors = list(map(lambda t: to_color((t - mn) / (mx - mn)), exposure_times))
-        else:
-            node_colors = None
+        # normalize, colorize and color convert the exposure times
+        norm = Normalize(vmin=min(exp_times), vmax=max(exp_times))
+        node_colors = list(map(
+            lambda t: self.__color_convert_inv(self.CMAP(norm(t))),
+            exp_times
+        ))
+        # add overlay with colored nodes and update the legend
         self.add_node_overlay(node_colors=node_colors)
+        self.__generate_legend_exp_time(norm)
 
     def add_path(self, path: StorePath) -> None:
         """Adds a customer's path to the visualizer"""
@@ -178,14 +188,15 @@ class Visualizer:
             sprite.rotation = 90
             self.graphics.append(sprite)
             label = pyglet.text.Label(
-                'Path', font_name='Sans Serif', font_size=18,
+                'Path', font_name='DejaVu Sans', font_size=18,
                 x=text_x, y=text_y(6), color=self.__color_convert_text(self.BLACK),
                 batch=self.batch, group=self.group_bg
             )
             self.graphics.append(label)
+            return
         # heading
         heading = pyglet.text.Label(
-            'Legend', font_name='Sans Serif', bold=True, font_size=19,
+            'Legend', font_name='DejaVu Sans', bold=True, font_size=19,
             x=heading_x, y=heading_y, color=self.__color_convert_text(self.BLACK),
             batch=self.batch, group=self.group_bg
         )
@@ -206,7 +217,7 @@ class Visualizer:
             rect.anchor_position = 0, 0
             self.graphics.append(rect)
             label = pyglet.text.Label(
-                text, font_name='Sans Serif', font_size=18,
+                text, font_name='DejaVu Sans', font_size=18,
                 x=text_x, y=text_y(i), color=self.__color_convert_text(self.BLACK),
                 batch=self.batch, group=self.group_bg
             )
@@ -227,11 +238,40 @@ class Visualizer:
         circIn.anchor_position = cs, cs
         self.graphics.append(circIn)
         label = pyglet.text.Label(
-            'Node', font_name='Sans Serif', font_size=18,
+            'Node', font_name='DejaVu Sans', font_size=18,
             x=text_x, y=text_y(5), color=self.__color_convert_text(self.BLACK),
             batch=self.batch, group=self.group_bg
         )
         self.graphics.append(label)
+
+    def __generate_legend_exp_time(self, norm: Normalize) -> None:
+        """Generates an exposure time colorbar for the legend"""
+        # set up the figure, canvas and axis
+        fig = Figure(figsize=(1, 2), dpi=170)
+        fig.subplots_adjust(top=0.85, bottom=0.1, left=0.11, right=0.2)
+        can = Canvas(fig)
+        ax = fig.gca()
+        # add the colorbar and 'draw'
+        fig.colorbar(
+            ScalarMappable(norm=norm, cmap=self.CMAP),
+            cax=ax, label='Mean exposure time (s)'
+        )
+        can.draw()
+        # convert the figure to an image array and invert the y-axis
+        fig_w, fig_h = map(int, fig.get_size_inches() * fig.get_dpi())
+        arr = np.frombuffer(can.tostring_rgb(), dtype='ubyte').reshape((fig_h, fig_w, 3))
+        arr = list(np.flipud(arr).flatten())
+        arr = (pyglet.gl.GLubyte * len(arr))(*arr)
+        # convert the array to a sprite and add it
+        image = pyglet.image.ImageData(fig_w, fig_h, 'RGB', arr)
+        image.anchor_y = fig_h
+        sx = (self.unit_width + 0.6) * self.ppu
+        sy = (self.unit_height - 6.0) * self.ppu
+        sprite = pyglet.sprite.Sprite(
+            image, x=sx, y=sy,
+            batch=self.batch, group=self.group_bg
+        )
+        self.graphics.append(sprite)
 
     def __get_tile_type(self, x: int, y: int) -> TileType:
         """Gets the type of tile at the given (x, y) coordinate"""
@@ -284,6 +324,10 @@ class Visualizer:
     def __color_convert(self, color: List[int]) -> List[float]:
         """Maps a color's channels to (0,1) and adds an alpha channel"""
         return [c / 255 for c in color] + [0]
+    
+    def __color_convert_inv(self, color: List[float]) -> List[int]:
+        """Maps a color's channels to (0,255_ and removes the alpha channel"""
+        return [int(c * 255) for c in color[:3]]
 
     def __color_convert_text(self, color: List[int]) -> List[int]:
         """Adds an alpha channel to an RGB color"""

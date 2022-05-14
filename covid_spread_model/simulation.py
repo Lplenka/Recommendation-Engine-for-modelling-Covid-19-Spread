@@ -131,6 +131,35 @@ class Simulation:
             return self.customers[self.n_customers_who_visited]
         return None
 
+    def visualize_overlay(self) -> None:
+        """Visualizes the store layout with nodes and edges overlayed"""
+        visualizer = Visualizer(self.config, self.store)
+        visualizer.add_node_overlay()
+        visualizer.run()
+
+    def visualize_path(self) -> None:
+        """Visualizes a random customer's path through the store"""
+        visualizer = Visualizer(self.config, self.store)
+        visualizer.add_node_overlay()
+        path = self.customers[random.randint(0, self.n_customers - 1)].path
+        visualizer.add_path(path)
+        visualizer.run()
+
+    def visualize_exposure_time(self) -> None:
+        """Visualizes the mean exposure time for each node as a heatmap"""
+        visualizer = Visualizer(self.config, self.store)
+        exposure_times = self.__get_average_history_array(
+            self.history.node_exposure_times,
+            self.store.n_nodes
+        )
+        # convert the exposure times from ticks to seconds
+        exposure_times = list(map(
+            lambda t: t * self.config['flow']['tick_duration_sec'],
+            exposure_times
+        ))
+        visualizer.add_exposure_times(exposure_times)
+        visualizer.run()
+    
     def plot_basic_results(self) -> None:
         """Plots a selection of basic results"""
         self.__plot_customers_in_store()
@@ -170,17 +199,7 @@ class Simulation:
         plt.xlabel('Number of newly infected customers')
         plt.ylabel('Count')
         plt.show()
-    
-    def visualize_exposure_time(self) -> None:
-        """Visualizes the mean exposure time for each node as a heatmap"""
-        visualizer = Visualizer(self.config, self.store)
-        exposure_times = self.__get_average_history_array(
-            self.history.node_exposure_times,
-            self.store.n_nodes
-        )
-        visualizer.add_exposure_times(exposure_times)
-        visualizer.run()
-    
+
     def __get_average_history_array(self, history_array: List[List[int]], length: int) -> List[float]:
         """Gets the mean values of a history array over all simulations"""
         avg_arr = [0] * length
@@ -189,17 +208,10 @@ class Simulation:
                 avg_arr[i] += history_array[j][i]
             avg_arr[i] /= self.history.n_simulations
         return avg_arr
-    
-    def test_visualizer(self) -> None:
-        visualizer = Visualizer(self.config, self.store)
-        visualizer.add_node_overlay()
-        visualizer.add_path(self.customers[10].path)
-        visualizer.run()
 
 
 if __name__ == '__main__':
     simulation = Simulation()
-    simulation.test_visualizer()
-    #simulation.run_n_simulations(2)
+    simulation.run_n_simulations(30)
+    simulation.visualize_exposure_time()
     #simulation.plot_basic_results()
-    #simulation.visualize_exposure_time()
